@@ -141,3 +141,24 @@ qiime feature-classifier classify-sklearn   --i-classifier silva-138-99-515-806-
 #make stacked bar visualizations
 qiime taxa barplot --o-visualization taxa_plot  --m-metadata-file abby_map.txt  --i-taxonomy abby_taxonomy.qza --i-table abby_table-deblur.qza
 qiime taxa barplot --o-visualization taxa_plot2  --m-metadata-file abby_map2.txt  --i-taxonomy abby_taxonomy2.qza --i-table abby_table-deblur2.qza
+
+#normalize table by 16S copy # using gcn-norm
+qiime gcn-norm copy-num-normalize \
+  --i-table abby_table-deblur2.qza \
+  --i-taxonomy abby_taxonomy2.qza \
+  --o-gcn-norm-table abby_table-normalized2.qza
+
+qiime gcn-norm copy-num-normalize \
+  --i-table abby_table-deblur.qza \
+  --i-taxonomy abby_taxonomy.qza \
+  --o-gcn-norm-table abby_table-normalized.qza
+
+ #export normalized OTU table to biom then to text file
+ qiime tools export --input-path abby_table-normalized2.qza --output-path asv_table2_norm
+ biom convert -i asv_table2_norm/feature-table.biom --to-tsv -o asv_table2_norm.txt
+ 
+qiime tools export --input-path abby_table-normalized.qza --output-path asv_table_norm
+ biom convert -i asv_table_norm/feature-table.biom --to-tsv -o asv_table_norm.txt
+ 
+
+
