@@ -161,4 +161,34 @@ qiime tools export --input-path abby_table-normalized.qza --output-path asv_tabl
  biom convert -i asv_table_norm/feature-table.biom --to-tsv -o asv_table_norm.txt
  
 
+ #import plasmid sequence to QIIME
+#qiime tools import --input-path DF_16S_complete\ ITS\ construct.fasta --output-path plasmid.qza --type 'FeatureData[Sequence]'
+
+#run deblur
+  qiime deblur denoise-other \
+  --i-demultiplexed-seqs  abby_demux-filtered2.qza \
+  --i-reference-seqs plasmid.qza \
+  --p-trim-length 120 \
+  --p-jobs-to-start 24 \
+  --o-representative-sequences  plasmid_rep-seqs-deblur2.qza \
+  --o-table  plasmid_table-deblur2.qza \
+   --o-stats  plasmid_deblur-stats2.qza
+
+  qiime deblur denoise-other \
+  --i-demultiplexed-seqs  abby_demux-filtered2.qza \
+  --i-reference-seqs plasmid.qza \
+  --p-trim-length 120 \
+  --p-jobs-to-start 24 \
+  --o-representative-sequences  plasmid_rep-seqs-deblur.qza \
+  --o-table  plasmid_table-deblur.qza \
+   --o-stats  plasmid_deblur-stats.qza
+
+#export tables
+ qiime tools export --input-path plasmid_table-deblur.qza --output-path plasmid_table
+ biom convert -i plasmid_table/feature-table.biom --to-tsv -o plasmid_table.txt
+ 
+qiime tools export --input-path plasmid_table-deblur2.qza --output-path plasmid_table2
+ biom convert -i plasmid_table2/feature-table.biom --to-tsv -o plasmid_table2.txt
+ 
+
 
