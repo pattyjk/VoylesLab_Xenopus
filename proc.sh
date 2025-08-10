@@ -169,7 +169,6 @@ qiime tools export --input-path abby_table-normalized.qza --output-path asv_tabl
   --i-demultiplexed-seqs  abby_demux-filtered2.qza \
   --i-reference-seqs plasmid.qza \
   --p-trim-length 120 \
-  --p-jobs-to-start 24 \
   --o-representative-sequences  plasmid_rep-seqs-deblur2.qza \
   --o-table  plasmid_table-deblur2.qza \
    --o-stats  plasmid_deblur-stats2.qza
@@ -178,7 +177,6 @@ qiime tools export --input-path abby_table-normalized.qza --output-path asv_tabl
   --i-demultiplexed-seqs  abby_demux-filtered2.qza \
   --i-reference-seqs plasmid.qza \
   --p-trim-length 120 \
-  --p-jobs-to-start 24 \
   --o-representative-sequences  plasmid_rep-seqs-deblur.qza \
   --o-table  plasmid_table-deblur.qza \
    --o-stats  plasmid_deblur-stats.qza

@@ -1,9 +1,9 @@
 ##Voyles lab X. tropicalis data
 setwd('Documents/GitHub/Abby_Xenopus/')
 
-#read in OTU tables
-otu1<-read.delim('asv_table1.txt', header=T, row.names=1)
-otu2<-read.delim('asv_table2.txt', header=T, row.names = 1)
+#read in OTU tables normalized by 16S operon count
+otu1<-read.delim('asv_table_norm.txt', header=T, row.names=1)
+otu2<-read.delim('asv_table2_norm.txt', header=T, row.names = 1)
 
 # Get all unique sample names
 all_samples <- union(colnames(otu1), colnames(otu2))
@@ -27,17 +27,71 @@ otu_merged <- otu1_full + otu2_full
 otu_merged_df <- as.data.frame(otu_merged)
 
 #write to file
-write.table(otu_merged_df, "merged_otu_table.txt", sep = "\t", quote = FALSE)
+write.table(otu_merged_df, "merged_otu_table_norm.txt", sep = "\t", quote = FALSE)
 
 #read in meta data
 meta<-read.delim('abby_map.txt', header=T)
 
+#depth
 min(colSums(otu_merged_df))
-#5476
+#2645.622
+
+#read in plasmid table
+library(readr)
+plasmid_table_combined <- read_delim("plasmid_table_combined.txt", delim = "\t", escape_double = FALSE, trim_ws = TRUE)
+plasmid<-as.data.frame(t(plasmid_table_combined))
+plasmid$SampleID<-row.names(plasmid)
+names(plasmid)<-c('PlasmidCount', 'SampleID')
+
+#bind plasmid data to meta data
+meta2<-merge(meta, plasmid, by.x='SampleID', by.y='SampleID')
+
+#add total reads to meta data
+tots_reads<-as.data.frame(colSums(otu_merged_df))
+tots_reads$SampleID<-row.names(tots_reads)
+names(tots_reads)<-c('TotalReads', 'SampleID')
+meta2<-merge(meta2, tots_reads, by='SampleID')
+write.table(meta2, 'metadata_withabun.txt',sep='\t', quote=F, row.names=F)
+
+# Total 16S copies of community = 
+#16S copies of plasmid spike-in X (1/ % of reads of plasmid in sequenced community [read count / total reads] - 1)
+# spike in was 10,000
+
+#calculate estimated total 16S abundance (10,000 spikein)
+meta2$TotalAbun<-abs(10000 * (1/( (meta2$PlasmidCount/meta2$TotalReads)-1)))
+
+#calculate true sOTU abundance (sOTU abun/total abun*total read count)
+# Keep only samples present in both OTU and metadata
+common_samples <- intersect(colnames(otu_merged_df), meta2$SampleID)
+otu <- otu_merged_df[, common_samples]
+meta2 <- meta2 %>% filter(SampleID %in% common_samples)
+
+# Order metadata to match OTU columns
+meta2 <- meta2[match(colnames(otu), meta2$SampleID), ]
+
+# Convert OTU counts to relative abundance (column-wise)
+otu_rel <- sweep(otu, 2, colSums(otu), FUN = "/")
+
+# Multiply each sample's relative abundance by its TotalAbun value
+otu_scaled <- sweep(otu_rel, 2, meta2$TotalAbun, FUN = "*")
+
+#remove the controls
+otu_scaled <- otu[, !(colnames(otu_scaled) %in% c("NegPCR", "NegExtraction2", "NegExtraction"))]
+
+#write to file for future use
+write.table(otu_scaled, 'otu_table_norm_abun.txt', sep='\t', quote=F, row.names=T)
+####################
+
+#read in tabel for analysis
+otu_scaled<-read.delim('otu_table_norm_abun.txt', header=T, row.names=1)
+
+#depth
+min(colSums(otu_scaled))
+#[1] 2645.622
 
 #rarefy data 
 set.seed(515)
-xt_rare<-rrarefy(t(otu_merged_df), sample=5476)
+xt_rare<-rrarefy(t(round(otu_scaled, 0)), sample=2645)
 
 #calculate PCoA based on BC similarity
 ko_pcoa<-capscale(xt_rare  ~ 1, distance='bray')
@@ -52,25 +106,25 @@ ko.coords<-as.data.frame(ko.scores$sites)
 ko.coords$SampleID<-row.names(ko.coords)
 
 #map back meta data
-ko.coords<-merge(ko.coords, meta, by.x='SampleID', by.y='SampleID')
+ko.coords<-merge(ko.coords, meta2, by.x='SampleID', by.y='SampleID')
 
 #calculate percent variation explained for first two axis
 100*round(ko_pcoa$CA$eig[1]/sum(ko_pcoa$CA$eig), 3)
-#22.9
+#23.4
 100*round(ko_pcoa$CA$eig[2]/sum(ko_pcoa$CA$eig), 3)
-#10.2
+#9.9
 
 #plot PCoA
 library(ggplot2)
-ggplot(ko.coords, aes(MDS1, MDS2, color=AMX_Treatment, Shape=Jliv_Treatment))+
+ggplot(ko.coords, aes(MDS1, MDS2, color=Treatment))+
   geom_point(size=2)+
   theme_bw()+
-  xlab("PC1- 22.9%")+
-  ylab("PC2- 10.2%")
+  xlab("PC1- 23.4%")+
+  ylab("PC2- 9.9%")
 
 ###Calculate alpha diversity
 #Richness
-xt.alph<-as.data.frame(specnumber(rrarefy(t(otu_merged_df), sample=5476)))
+xt.alph<-as.data.frame(specnumber(rrarefy(t(round(otu_scaled, 0)), sample=2645)))
 xt.alph$SampleID<-row.names(xt.alph)
 xt.alph<-merge(xt.alph, meta, by='SampleID')
 xt.alph$Richness<-as.numeric(xt.alph$`specnumber(rrarefy(t(otu_merged_df), sample = 5476))`)
