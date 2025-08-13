@@ -189,4 +189,12 @@ qiime tools export --input-path plasmid_table-deblur2.qza --output-path plasmid_
  biom convert -i plasmid_table2/feature-table.biom --to-tsv -o plasmid_table2.txt
  
 
+#import OTU table with norm abun and no comtam back to qiime to remave taxonmy barplots
+biom convert -i otu_table_norm_abun_no_contam.txt --to-hdf5 -o otu_table_norm_abun_no_contam.txt --table-type 'O(qiime(qiime2-(q(q(q(q(q(qiime2-2023.5) [patrick.kearns@chimerahead 6-11-25_run]$ qiime tools import --input-path otu_table_norm_abun_no_contam.txt --type 'FeatureTable[Frequency]' --input-format BIOMV210Format --output-path otu_table_norm_abun_no_contam.qza
+qiime tools import --input-path otu_table_norm_abun_no_contam.txt --type 'FeatureTable[Frequency]' --input-format BIOMV210Format --output-path otu_table_norm_abun_no_contam.qza
 
+#merge tax files
+qiime feature-table merge-taxa --i-data abby_taxonomy.qza --i-data abby_taxonomy2.qza --o-merged-data combined_taxonomy.qza
+
+#recreate stacked bar plots
+qiime taxa barplot --o-visualization taxa_norm_no_contam.qzv --m-metadata-file abby_map.txt --i-taxonomy combined_taxonomy.qza --i-table otu_table_norm_abun_no_contam.qza
