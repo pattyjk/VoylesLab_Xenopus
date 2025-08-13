@@ -178,6 +178,3 @@ ggplot(xt.alph, aes(AMX_Treatment, Richness, fill=Jliv_Treatment))+
   xlab("")+
   coord_flip()+
   ylab("sOTU Richness")
-
-
-
